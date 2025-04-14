@@ -7,17 +7,20 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+final class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<NewsListViewModel>(
-      create: (_) => NewsListViewModel()..fetchNews(), // Başlangıçta haber verilerini çekiyoruz.
+      create:
+          (_) =>
+              NewsListViewModel()
+                ..fetchNews(), // Başlangıçta haber verilerini çekiyoruz.
       child: MaterialApp(
         title: 'NewsApp',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primaryColor: const Color(0xFF0D47A1), // Örnek: koyu lacivert ton
         ),
         home: const HomePage(),
       ),
