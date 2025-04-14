@@ -114,6 +114,26 @@ final class _HomePageState extends State<HomePage> {
                         final NewsArticle article =
                             newsViewModel.articles[index];
                         return ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child:
+                                article.imageUrl.isNotEmpty
+                                    ? Image.network(
+                                      article.imageUrl,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    )
+                                    : Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Theme.of(context).primaryColor,
+                                      child: Icon(
+                                        Icons.image,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                          ),
                           title: Text(article.title),
                           subtitle: Text(
                             article.description,
