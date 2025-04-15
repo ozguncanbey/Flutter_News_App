@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/sort_type_enum.dart'; // Import only from the utils package
 import '../view_models/news_list_view_model.dart';
 import '../models/news_article.dart';
 import 'detail_page.dart';
@@ -14,6 +15,7 @@ final class HomePage extends StatefulWidget {
 final class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  SortType _selectedSort = SortType.publishedAt; // Use the imported SortType
 
   @override
   void initState() {
@@ -23,6 +25,11 @@ final class _HomePageState extends State<HomePage> {
     });
     _searchFocusNode.addListener(() {
       setState(() {});
+    });
+
+    // Initialize news on startup with default sort
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NewsListViewModel>(context, listen: false).initialize();
     });
   }
 
@@ -38,8 +45,53 @@ final class _HomePageState extends State<HomePage> {
       FocusScope.of(context).unfocus();
     } else {
       _searchController.clear();
-      viewModel.updateQuery('');
+      viewModel.fetchNews(sortType: _selectedSort); // Pass current sort type
       FocusScope.of(context).unfocus();
+    }
+  }
+
+  Future<void> _refreshNews(NewsListViewModel viewModel) async {
+    await viewModel.fetchNews(sortType: _selectedSort);
+  }
+
+  void _showSortMenu(BuildContext context) async {
+    final RenderBox button = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final buttonSize = button.size;
+    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+
+    final position = RelativeRect.fromLTRB(
+      buttonPosition.dx + buttonSize.width - 120,
+      buttonPosition.dy,
+      0,
+      0,
+    );
+
+    final selected = await showMenu<SortType>(
+      context: context,
+      position: position,
+      items: const [
+        PopupMenuItem<SortType>(
+          value: SortType.popularity,
+          child: Text('Popularity'),
+        ),
+        PopupMenuItem<SortType>(
+          value: SortType.publishedAt,
+          child: Text('PublishedAt'),
+        ),
+      ],
+    );
+
+    if (selected != null && selected != _selectedSort) {
+      setState(() {
+        _selectedSort = selected;
+        // Use the new changeSortType method
+        Provider.of<NewsListViewModel>(
+          context,
+          listen: false,
+        ).changeSortType(selected);
+      });
     }
   }
 
@@ -54,6 +106,17 @@ final class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         elevation: 0,
         backgroundColor: theme.primaryColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () => _showSortMenu(context),
+            style: IconButton.styleFrom(
+              shape: const CircleBorder(),
+              foregroundColor: Colors.white,
+            ),
+            tooltip: 'Sort articles',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -68,6 +131,7 @@ final class _HomePageState extends State<HomePage> {
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
+                    cursorColor: theme.primaryColor,
                     decoration: InputDecoration(
                       hintText: 'Search News...',
                       prefixIcon: Icon(Icons.search, color: theme.primaryColor),
@@ -80,7 +144,11 @@ final class _HomePageState extends State<HomePage> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (value) {
-                      newsViewModel.updateQuery(value);
+                      // Use both the search query and current sort type
+                      newsViewModel.fetchNews(
+                        query: value,
+                        sortType: _selectedSort,
+                      );
                     },
                   ),
                 ),
@@ -102,102 +170,129 @@ final class _HomePageState extends State<HomePage> {
             child:
                 newsViewModel.isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: newsViewModel.articles.length,
-                      itemBuilder: (context, index) {
-                        final NewsArticle article =
-                            newsViewModel.articles[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12.0),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => DetailPage(article: article),
+                    : RefreshIndicator(
+                      color: theme.primaryColor,
+                      onRefresh: () => _refreshNews(newsViewModel),
+                      child:
+                          newsViewModel.articles.isEmpty
+                              ? const Center(child: Text('No news found'))
+                              : ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
                                 ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    child:
-                                        article.imageUrl.isNotEmpty
-                                            ? Image.network(
-                                              article.imageUrl,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) => Container(
-                                                    width: 100,
-                                                    height: 100,
-                                                    color: theme.primaryColor,
-                                                    child: const Icon(
-                                                      Icons.broken_image,
-                                                      color: Colors.white,
+                                itemCount: newsViewModel.articles.length,
+                                itemBuilder: (context, index) {
+                                  final NewsArticle article =
+                                      newsViewModel.articles[index];
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 8.0,
+                                    ),
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12.0),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12.0),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => DetailPage(
+                                                  article: article,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              child:
+                                                  article.imageUrl.isNotEmpty
+                                                      ? Image.network(
+                                                        article.imageUrl,
+                                                        width: 100,
+                                                        height: 100,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder:
+                                                            (
+                                                              context,
+                                                              error,
+                                                              stackTrace,
+                                                            ) => Container(
+                                                              width: 100,
+                                                              height: 100,
+                                                              color:
+                                                                  theme
+                                                                      .primaryColor,
+                                                              child: const Icon(
+                                                                Icons
+                                                                    .broken_image,
+                                                                color:
+                                                                    Colors
+                                                                        .white,
+                                                              ),
+                                                            ),
+                                                      )
+                                                      : Container(
+                                                        width: 100,
+                                                        height: 100,
+                                                        color:
+                                                            theme.primaryColor,
+                                                        child: const Icon(
+                                                          Icons.image,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                            ),
+                                            const SizedBox(width: 12.0),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    article.title,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: theme.primaryColor,
                                                     ),
                                                   ),
-                                            )
-                                            : Container(
-                                              width: 100,
-                                              height: 100,
-                                              color: theme.primaryColor,
-                                              child: const Icon(
-                                                Icons.image,
-                                                color: Colors.white,
+                                                  const SizedBox(height: 8.0),
+                                                  Text(
+                                                    article.description,
+                                                    maxLines: 3,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color:
+                                                          theme
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.color ??
+                                                          Colors.black87,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                  ),
-                                  const SizedBox(width: 12.0),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          article.title,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.primaryColor,
-                                          ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 8.0),
-                                        Text(
-                                          article.description,
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        );
-                      },
                     ),
           ),
         ],

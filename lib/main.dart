@@ -14,15 +14,30 @@ final class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<NewsListViewModel>(
-      create: (_) => NewsListViewModel()..fetchNews(),
+      create:
+          (_) =>
+              NewsListViewModel()
+                ..initialize(), // Use initialize instead of fetchNews
       child: MaterialApp(
         title: 'NewsApp',
         theme: ThemeData(
-          primaryColor: const Color(0xFF0D47A1),
+          primaryColor: const Color(0xFF0D47A1), // Mevcut tema rengi korundu
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.blue, // primaryColor ile uyumlu
+          ).copyWith(
+            primary: const Color(0xFF0D47A1), // RefreshIndicator için
+            secondary: const Color(0xFF0D47A1),
+          ),
           textTheme: const TextTheme(
             bodySmall: TextStyle(color: Colors.grey),
             bodyMedium: TextStyle(color: Colors.black87),
           ),
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          useMaterial3: true,
         ),
         home: const MainNavigation(),
       ),
