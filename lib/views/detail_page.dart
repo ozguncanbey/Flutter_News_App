@@ -3,11 +3,46 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/news_article.dart';
+import '../services/bookmark_service.dart';
 
-final class DetailPage extends StatelessWidget {
+final class DetailPage extends StatefulWidget {
   final NewsArticle article;
 
   const DetailPage({super.key, required this.article});
+
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+final class _DetailPageState extends State<DetailPage> {
+  bool _isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBookmarkStatus();
+  }
+
+  Future<void> _checkBookmarkStatus() async {
+    final isBookmarked = await BookmarkService().isBookmarked(
+      widget.article.url,
+    );
+    setState(() {
+      _isBookmarked = isBookmarked;
+    });
+  }
+
+  Future<void> _toggleBookmark() async {
+    final bookmarkService = BookmarkService();
+    if (_isBookmarked) {
+      await bookmarkService.removeBookmark(widget.article.url);
+    } else {
+      await bookmarkService.addBookmark(widget.article);
+    }
+    setState(() {
+      _isBookmarked = !_isBookmarked;
+    });
+  }
 
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
@@ -19,7 +54,7 @@ final class DetailPage extends StatelessWidget {
   }
 
   void _shareArticle() {
-    Share.share('${article.title}\n${article.url}');
+    Share.share('${widget.article.title}\n${widget.article.url}');
   }
 
   @override
@@ -42,11 +77,9 @@ final class DetailPage extends StatelessWidget {
             onPressed: _shareArticle,
           ),
           IconButton(
-            icon: const Icon(Icons.bookmark_border),
+            icon: Icon(_isBookmarked ? Icons.bookmark : Icons.bookmark_border),
             color: Colors.white,
-            onPressed: () {
-              // Bookmark functionality to be implemented later
-            },
+            onPressed: _toggleBookmark,
           ),
         ],
       ),
@@ -56,7 +89,7 @@ final class DetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              article.title,
+              widget.article.title,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -64,11 +97,11 @@ final class DetailPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16.0),
-            if (article.imageUrl.isNotEmpty)
+            if (widget.article.imageUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
                 child: Image.network(
-                  article.imageUrl,
+                  widget.article.imageUrl,
                   width: double.infinity,
                   height: 200,
                   fit: BoxFit.cover,
@@ -90,14 +123,16 @@ final class DetailPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  article.author.isNotEmpty ? article.author : 'Unknown Author',
+                  widget.article.author.isNotEmpty
+                      ? widget.article.author
+                      : 'Unknown Author',
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.textTheme.bodySmall?.color,
                   ),
                 ),
                 Text(
-                  DateFormat('dd MMM yyyy').format(article.publishedAt),
+                  DateFormat('dd MMM yyyy').format(widget.article.publishedAt),
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.textTheme.bodySmall?.color,
@@ -107,7 +142,7 @@ final class DetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             Text(
-              article.description,
+              widget.article.description,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -116,19 +151,21 @@ final class DetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 16.0),
             Text(
-              article.content,
+              widget.article.content.isNotEmpty
+                  ? widget.article.content
+                  : 'No content available',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w300,
-                color: theme.textTheme.bodySmall?.color,
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 16.0),
-            if (article.url.isNotEmpty)
+            if (widget.article.url.isNotEmpty)
               Align(
                 alignment: Alignment.centerLeft,
                 child: GestureDetector(
-                  onTap: () => _launchUrl(article.url),
+                  onTap: () => _launchUrl(widget.article.url),
                   child: Text(
                     'Read More',
                     style: TextStyle(
