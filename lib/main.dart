@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'view_models/news_list_view_model.dart';
 import 'views/bookmark_page.dart';
 import 'views/home_page.dart';
+import 'utils/sort_type_enum.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,8 +17,7 @@ final class MyApp extends StatelessWidget {
     return ChangeNotifierProvider<NewsListViewModel>(
       create:
           (_) =>
-              NewsListViewModel()
-                ..initialize(), // Use initialize instead of fetchNews
+              NewsListViewModel(), // initialize() çağrısı HomePage'de yapılacak
       child: MaterialApp(
         title: 'NewsApp',
         theme: ThemeData(
@@ -55,18 +55,42 @@ final class MainNavigation extends StatefulWidget {
 final class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [const HomePage(), const BookmarkPage()];
+  // PageView için bir controller
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      // Sayfa geçişlerinde animasyon ekledik
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      // IndexedStack yerine PageView kullanarak sayfaların durumlarını koruyoruz
+      body: PageView(
+        controller: _pageController,
+        physics:
+            const NeverScrollableScrollPhysics(), // Kaydırarak geçişi engelliyoruz
+        children: const [HomePage(), BookmarkPage()],
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),

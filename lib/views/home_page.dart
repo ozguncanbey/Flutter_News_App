@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/sort_type_enum.dart'; // Import only from the utils package
+import '../utils/sort_type_enum.dart';
 import '../view_models/news_list_view_model.dart';
 import '../models/news_article.dart';
 import 'detail_page.dart';
@@ -12,10 +12,15 @@ final class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-final class _HomePageState extends State<HomePage> {
+final class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  SortType _selectedSort = SortType.publishedAt; // Use the imported SortType
+  SortType _selectedSort = SortType.publishedAt;
+  bool _isInitialized = false;
+
+  @override
+  bool get wantKeepAlive => true; // Bu sayfanın durumunu korumak için
 
   @override
   void initState() {
@@ -27,9 +32,18 @@ final class _HomePageState extends State<HomePage> {
       setState(() {});
     });
 
-    // Initialize news on startup with default sort
+    // Sadece ilk kez yükleme yapmak için
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<NewsListViewModel>(context, listen: false).initialize();
+      if (!_isInitialized) {
+        final viewModel = Provider.of<NewsListViewModel>(
+          context,
+          listen: false,
+        );
+        if (viewModel.articles.isEmpty) {
+          viewModel.initialize();
+        }
+        _isInitialized = true;
+      }
     });
   }
 
@@ -45,7 +59,7 @@ final class _HomePageState extends State<HomePage> {
       FocusScope.of(context).unfocus();
     } else {
       _searchController.clear();
-      viewModel.fetchNews(sortType: _selectedSort); // Pass current sort type
+      viewModel.fetchNews(sortType: _selectedSort);
       FocusScope.of(context).unfocus();
     }
   }
@@ -86,7 +100,6 @@ final class _HomePageState extends State<HomePage> {
     if (selected != null && selected != _selectedSort) {
       setState(() {
         _selectedSort = selected;
-        // Use the new changeSortType method
         Provider.of<NewsListViewModel>(
           context,
           listen: false,
@@ -97,6 +110,7 @@ final class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin için gerekli
     final newsViewModel = Provider.of<NewsListViewModel>(context);
     final theme = Theme.of(context);
 
@@ -144,7 +158,6 @@ final class _HomePageState extends State<HomePage> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (value) {
-                      // Use both the search query and current sort type
                       newsViewModel.fetchNews(
                         query: value,
                         sortType: _selectedSort,
