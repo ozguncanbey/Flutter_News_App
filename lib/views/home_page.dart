@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../view_models/news_list_view_model.dart';
 import '../models/news_article.dart';
-import 'detail_page.dart'; // Detay sayfası
+import 'detail_page.dart';
 
 final class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,12 +18,11 @@ final class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Hem TextEditingController hem FocusNode dinleyicilerini ekliyoruz.
     _searchController.addListener(() {
-      setState(() {}); // Text değiştiğinde UI güncellenir.
+      setState(() {});
     });
     _searchFocusNode.addListener(() {
-      setState(() {}); // Focus değişiminde UI güncellenir.
+      setState(() {});
     });
   }
 
@@ -36,10 +35,8 @@ final class _HomePageState extends State<HomePage> {
 
   void _clearSearch(NewsListViewModel viewModel) {
     if (_searchController.text.isEmpty) {
-      // Metin zaten boşsa, sadece odağı kaldır.
       FocusScope.of(context).unfocus();
     } else {
-      // Metin varsa temizle, sorguyu resetle, ve ardından odağı kaldır.
       _searchController.clear();
       viewModel.updateQuery('');
       FocusScope.of(context).unfocus();
@@ -49,52 +46,50 @@ final class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final newsViewModel = Provider.of<NewsListViewModel>(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Flutter News App')),
+      appBar: AppBar(
+        title: const Text('Flutter News App'),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        backgroundColor: theme.primaryColor,
+      ),
       body: Column(
         children: [
-          // Arama çubuğu ve cancel butonunu aynı satıra koyuyoruz.
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Row(
               children: [
-                // TextField için Expanded widget. FocusNode burada atanıyor.
                 Expanded(
                   child: TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
-                      labelText: 'Search News...',
+                      hintText: 'Search News...',
+                      prefixIcon: Icon(Icons.search, color: theme.primaryColor),
+                      filled: true,
+                      fillColor: theme.cardColor,
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Theme.of(context).primaryColor,
-                        ),
+                        borderRadius: BorderRadius.circular(12.0),
+                        borderSide: BorderSide.none,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Theme.of(context).primaryColor,
-                          width: 2.0,
-                        ),
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (value) {
                       newsViewModel.updateQuery(value);
                     },
                   ),
                 ),
-                // Cancel butonu yalnızca textfield focus aldığında gösterilir.
                 if (_searchFocusNode.hasFocus)
                   Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
+                    padding: const EdgeInsets.only(left: 12.0),
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: theme.primaryColor,
                       ),
                       onPressed: () => _clearSearch(newsViewModel),
                       child: const Text('Cancel'),
@@ -103,52 +98,104 @@ final class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          // Haber listesini göstermek için:
           Expanded(
             child:
                 newsViewModel.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       itemCount: newsViewModel.articles.length,
                       itemBuilder: (context, index) {
                         final NewsArticle article =
                             newsViewModel.articles[index];
-                        return ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child:
-                                article.imageUrl.isNotEmpty
-                                    ? Image.network(
-                                      article.imageUrl,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    )
-                                    : Container(
-                                      width: 80,
-                                      height: 80,
-                                      color: Theme.of(context).primaryColor,
-                                      child: Icon(
-                                        Icons.image,
-                                        color: Colors.white,
-                                      ),
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8.0),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12.0),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => DetailPage(article: article),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child:
+                                        article.imageUrl.isNotEmpty
+                                            ? Image.network(
+                                              article.imageUrl,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Container(
+                                                    width: 100,
+                                                    height: 100,
+                                                    color: theme.primaryColor,
+                                                    child: const Icon(
+                                                      Icons.broken_image,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                            )
+                                            : Container(
+                                              width: 100,
+                                              height: 100,
+                                              color: theme.primaryColor,
+                                              child: const Icon(
+                                                Icons.image,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                  ),
+                                  const SizedBox(width: 12.0),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          article.title,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.primaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8.0),
+                                        Text(
+                                          article.description,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                          ),
-                          title: Text(article.title),
-                          subtitle: Text(
-                            article.description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => DetailPage(article: article),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         );
                       },
                     ),
