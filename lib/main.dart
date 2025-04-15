@@ -57,7 +57,7 @@ final class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.bookmark),
-            label: 'Bookmarks',
+            label: 'Bookmark',
           ),
         ],
         currentIndex: _selectedIndex,

@@ -18,7 +18,7 @@ final class BookmarkService {
   Future<void> removeBookmark(String url) async {
     final prefs = await SharedPreferences.getInstance();
     final bookmarks = await getBookmarks();
-    bookmarks.removeWhere((item) => item.url == item.url);
+    bookmarks.removeWhere((item) => item.url == url);
     final bookmarkJson = bookmarks.map((item) => item.toJson()).toList();
     await prefs.setString(_bookmarkKey, jsonEncode(bookmarkJson));
   }
