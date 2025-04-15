@@ -36,17 +36,3 @@ final class BookmarkService {
     return bookmarks.any((item) => item.url == url);
   }
 }
-
-extension NewsArticleExtension on NewsArticle {
-  Map<String, dynamic> toJson() {
-    return {
-      'author': author,
-      'title': title,
-      'description': description,
-      'url': url,
-      'urlToImage': imageUrl,
-      'publishedAt': publishedAt.toIso8601String(),
-      'content': content,
-    };
-  }
-}

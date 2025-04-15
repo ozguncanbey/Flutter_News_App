@@ -25,8 +25,23 @@ final class NewsArticle {
       description: json['description'] ?? '',
       url: json['url'] ?? '',
       imageUrl: json['urlToImage'] ?? '',
-      publishedAt: DateTime.parse(json['publishedAt'] ?? DateTime.now().toString()),
+      publishedAt: DateTime.parse(
+        json['publishedAt'] ?? DateTime.now().toString(),
+      ),
       content: json['content'] ?? '',
     );
+  }
+
+  // toJson metodu, NewsArticle modelini JSON formatına dönüştürmek için kullanılır
+  Map<String, dynamic> toJson() {
+    return {
+      'author': author,
+      'title': title,
+      'description': description,
+      'url': url,
+      'urlToImage': imageUrl,
+      'publishedAt': publishedAt.toIso8601String(),
+      'content': content,
+    };
   }
 }
