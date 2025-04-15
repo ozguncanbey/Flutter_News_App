@@ -184,7 +184,7 @@ final class _HomePageState extends State<HomePage> {
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 13,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.black,
                                           ),

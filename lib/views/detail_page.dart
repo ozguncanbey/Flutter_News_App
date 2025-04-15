@@ -74,6 +74,7 @@ final class DetailPage extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder:
                       (context, error, stackTrace) => Container(
+                        width: double.infinity,
                         height: 200,
                         color: theme.primaryColor,
                         child: const Icon(
@@ -89,9 +90,7 @@ final class DetailPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  article.author.isNotEmpty
-                      ? article.author
-                      : 'Bilinmeyen Yazar',
+                  article.author.isNotEmpty ? article.author : 'Unknown Author',
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.textTheme.bodySmall?.color,
