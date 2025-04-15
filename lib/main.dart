@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'view_models/news_list_view_model.dart';
+import 'views/bookmark_page.dart';
 import 'views/home_page.dart';
 
 void main() {
@@ -13,16 +14,55 @@ final class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<NewsListViewModel>(
-      create:
-          (_) =>
-              NewsListViewModel()
-                ..fetchNews(), // Başlangıçta haber verilerini çekiyoruz.
+      create: (_) => NewsListViewModel()..fetchNews(),
       child: MaterialApp(
         title: 'NewsApp',
         theme: ThemeData(
-          primaryColor: const Color(0xFF0D47A1), // Örnek: koyu lacivert ton
+          primaryColor: const Color(0xFF0D47A1),
+          textTheme: const TextTheme(
+            bodySmall: TextStyle(color: Colors.grey),
+            bodyMedium: TextStyle(color: Colors.black87),
+          ),
         ),
-        home: const HomePage(),
+        home: const MainNavigation(),
+      ),
+    );
+  }
+}
+
+final class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  State<MainNavigation> createState() => _MainNavigationState();
+}
+
+final class _MainNavigationState extends State<MainNavigation> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [const HomePage(), const BookmarkPage()];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark),
+            label: 'Bookmarks',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Theme.of(context).primaryColor,
+        onTap: _onItemTapped,
       ),
     );
   }
