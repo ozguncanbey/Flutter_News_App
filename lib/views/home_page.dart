@@ -72,7 +72,7 @@ final class _HomePageState extends State<HomePage>
 
   void _clearSearch(NewsListViewModel viewModel) {
     _searchController.clear();
-    viewModel.updateQuery('');
+    viewModel.updateQuery(''); // Arama metnini temizle ve güncellemeyi tetikle
     FocusScope.of(context).unfocus();
   }
 

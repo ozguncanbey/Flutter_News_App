@@ -33,14 +33,21 @@ final class NewsListViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Query ve sortType güncelle
-      _currentQuery = query ?? _currentQuery;
-      if (sortType != null) {
-        _currentSortType = sortType;
+      final trimmedQuery = (query ?? '').trim();
+
+      // Eğer query boşsa, _currentQuery'yi temizle ve sortType’ı zorunlu olarak publishedAt yap
+      if (trimmedQuery.isEmpty) {
+        _currentQuery = '';
+        _currentSortType = SortType.publishedAt;
+      } else {
+        _currentQuery = trimmedQuery;
+        if (sortType != null) {
+          _currentSortType = sortType;
+        }
       }
 
       final result = await _newsApiService.fetchTopHeadlines(
-        query: _currentQuery,
+        query: (_currentQuery?.isEmpty ?? true) ? null : _currentQuery,
         sortType: _currentSortType,
         country: _currentCountry,
         page: _currentPage,
@@ -98,7 +105,14 @@ final class NewsListViewModel extends ChangeNotifier {
   // Sıralama tipini değiştirmek
   void changeSortType(SortType sortType) {
     if (sortType != _currentSortType) {
-      fetchNews(sortType: sortType);
+      // Mevcut sorguyu kaybetmemek için, _currentQuery boş değilse gönderiyoruz.
+      fetchNews(
+        query:
+            (_currentQuery != null && _currentQuery!.isNotEmpty)
+                ? _currentQuery
+                : null,
+        sortType: sortType,
+      );
     }
   }
 
