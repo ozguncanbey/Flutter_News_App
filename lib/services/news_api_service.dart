@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:flutter_news_app/config/config.dart';
 import 'package:http/http.dart' as http;
 import '../models/news_article.dart';
 import '../utils/sort_type_enum.dart';
 
 final class NewsApiService {
-  final String _apiKey = 'fe5dd6ca68374ea4aff8c73550a00aaf';
+  final String _apiKey = apiKey;
   final String _baseUrl = 'https://newsapi.org/v2';
 
   // 'query' parametresi boş bırakılırsa, ülkenin (örneğimizde "us") top headlines getirilecek.
