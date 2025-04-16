@@ -57,13 +57,10 @@ final class _HomePageState extends State<HomePage>
   }
 
   void _clearSearch(NewsListViewModel viewModel) {
-    if (_searchController.text.isEmpty) {
-      FocusScope.of(context).unfocus();
-    } else {
-      _searchController.clear();
-      viewModel.fetchNews(sortType: _selectedSort);
-      FocusScope.of(context).unfocus();
-    }
+    _searchController.clear();
+    // Boş query gönderiyoruz, böylece _currentQuery sıfırlanır.
+    viewModel.fetchNews(query: "", sortType: _selectedSort);
+    FocusScope.of(context).unfocus();
   }
 
   Future<void> _refreshNews(NewsListViewModel viewModel) async {

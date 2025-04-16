@@ -25,18 +25,16 @@ final class NewsListViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Query ve sortType'ı güncelle
-      _currentQuery = query;
+      // Eğer query parametresi null ise, daha önce saklanan query'yi kullan.
+      _currentQuery = query ?? _currentQuery;
       if (sortType != null) {
         _currentSortType = sortType;
       }
 
-      // Servis çağrısı; eğer query boşsa, serviste country parametresine göre top-headlines getirilecek.
       _articles = await _newsApiService.fetchTopHeadlines(
         query: _currentQuery,
         sortType: _currentSortType,
-        country:
-            _currentCountry, // Servis içerisinde country parametresi olarak kullanılıyor
+        country: _currentCountry,
       );
     } catch (e) {
       log(e.toString(), name: "fetchNewsError");
