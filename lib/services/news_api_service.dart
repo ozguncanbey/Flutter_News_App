@@ -12,17 +12,12 @@ final class NewsApiService {
   Future<List<NewsArticle>> fetchTopHeadlines({
     String? query,
     required SortType sortType,
+    String? country,
   }) async {
     String url;
     if (query == null || query.isEmpty) {
-      if (sortType == SortType.popularity) {
-        // top-headlines sortBy desteklemiyor, popularity için everything kullan
-        url =
-            '$_baseUrl/everything?q=general&sortBy=popularity&apiKey=$_apiKey';
-      } else {
-        // top-headlines için publishedAt varsayılan sıralama
-        url = '$_baseUrl/top-headlines?country=us&apiKey=$_apiKey';
-      }
+      // top-headlines için publishedAt varsayılan sıralama
+      url = '$_baseUrl/top-headlines?country=$country&apiKey=$_apiKey';
     } else {
       // everything endpoint'i için sortBy parametresi
       final sortBy =

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../custom_views/empty_state_view.dart' show EmptyStateView;
+import '../utils/country_enum.dart';
 import '../utils/sort_type_enum.dart';
 import '../view_models/news_list_view_model.dart';
 import '../models/news_article.dart';
@@ -20,7 +22,7 @@ final class _HomePageState extends State<HomePage>
   bool _isInitialized = false;
 
   @override
-  bool get wantKeepAlive => true; // Bu sayfanın durumunu korumak için
+  bool get wantKeepAlive => true; // Sayfanın durumunun korunması için
 
   @override
   void initState() {
@@ -68,6 +70,7 @@ final class _HomePageState extends State<HomePage>
     await viewModel.fetchNews(sortType: _selectedSort);
   }
 
+  // Dropdown için sort-by menüsünü açan metod
   void _showSortMenu(BuildContext context) async {
     final RenderBox button = context.findRenderObject()! as RenderBox;
     final RenderBox overlay =
@@ -108,6 +111,44 @@ final class _HomePageState extends State<HomePage>
     }
   }
 
+  // Dropdown için country menüsünü açan metod (Country enum kullanılıyor)
+  void _showCountryMenu(BuildContext context) async {
+    final RenderBox button = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final buttonSize = button.size;
+    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+
+    final position = RelativeRect.fromLTRB(
+      buttonPosition.dx + buttonSize.width - 120,
+      buttonPosition.dy,
+      0,
+      0,
+    );
+
+    final selected = await showMenu<Country>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<Country>(value: Country.us, child: const Text('US')),
+        PopupMenuItem<Country>(value: Country.en, child: const Text('England')),
+        PopupMenuItem<Country>(value: Country.tr, child: const Text('Turkey')),
+        PopupMenuItem<Country>(value: Country.fr, child: const Text('France')),
+        PopupMenuItem<Country>(value: Country.es, child: const Text('Spain')),
+        PopupMenuItem<Country>(value: Country.it, child: const Text('Italy')),
+        PopupMenuItem<Country>(value: Country.de, child: const Text('Germany')),
+      ],
+    );
+
+    if (selected != null) {
+      Provider.of<NewsListViewModel>(
+        // ignore: use_build_context_synchronously
+        context,
+        listen: false,
+      ).updateCountry(selected.code);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // AutomaticKeepAliveClientMixin için gerekli
@@ -118,17 +159,24 @@ final class _HomePageState extends State<HomePage>
       appBar: AppBar(
         title: const Text('Flutter News App'),
         foregroundColor: Colors.white,
-        elevation: 0,
         backgroundColor: theme.primaryColor,
         actions: [
+          // Tek buton: textField boşsa country, doluysa sort-dropdown açsın.
           IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortMenu(context),
-            style: IconButton.styleFrom(
-              shape: const CircleBorder(),
-              foregroundColor: Colors.white,
+            icon: Icon(
+              _searchController.text.isEmpty ? Icons.flag : Icons.sort,
             ),
-            tooltip: 'Sort articles',
+            onPressed: () {
+              if (_searchController.text.isEmpty) {
+                _showCountryMenu(context);
+              } else {
+                _showSortMenu(context);
+              }
+            },
+            tooltip:
+                _searchController.text.isEmpty
+                    ? 'Select Country'
+                    : 'Sort Articles',
           ),
         ],
       ),
@@ -188,7 +236,10 @@ final class _HomePageState extends State<HomePage>
                       onRefresh: () => _refreshNews(newsViewModel),
                       child:
                           newsViewModel.articles.isEmpty
-                              ? const Center(child: Text('No news found'))
+                              ? const EmptyStateView(
+                                icon: Icons.inbox,
+                                message: 'No news found',
+                              )
                               : ListView.builder(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16.0,

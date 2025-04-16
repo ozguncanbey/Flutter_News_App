@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'view_models/news_list_view_model.dart';
 import 'views/bookmark_page.dart';
 import 'views/home_page.dart';
-import 'utils/sort_type_enum.dart';
 
 void main() {
   runApp(const MyApp());

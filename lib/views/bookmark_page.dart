@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../custom_views/empty_state_view.dart' show EmptyStateView;
 import '../models/news_article.dart';
 import '../services/bookmark_service.dart';
 import 'detail_page.dart';
@@ -71,11 +72,9 @@ final class _BookmarkPageState extends State<BookmarkPage> {
         onRefresh: _loadBookmarks,
         child:
             _bookmarks.isEmpty
-                ? const Center(
-                  child: Text(
-                    'No bookmarks yet',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                ? const EmptyStateView(
+                  icon: Icons.bookmarks_outlined,
+                  message: 'No bookmarked found',
                 )
                 : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -196,7 +195,7 @@ final class _BookmarkPageState extends State<BookmarkPage> {
                                 ),
                                 onPressed: () => _removeBookmark(article.url),
                                 child: const Icon(
-                                  Icons.delete,
+                                  Icons.bookmark_remove_outlined,
                                   color: Colors.white,
                                   size: 24,
                                 ),
