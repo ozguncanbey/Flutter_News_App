@@ -63,7 +63,7 @@ final class _BookmarkPageState extends State<BookmarkPage> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.done : Icons.edit),
+            icon: Icon(_isEditing ? Icons.bookmark_remove_rounded : Icons.bookmark_remove_outlined),
             onPressed: _toggleEditMode,
           ),
         ],
