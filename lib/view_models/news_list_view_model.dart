@@ -9,62 +9,111 @@ final class NewsListViewModel extends ChangeNotifier {
 
   List<NewsArticle> _articles = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   SortType _currentSortType = SortType.publishedAt; // Varsayılan sıralama
   String? _currentQuery;
   String _currentCountry = 'us'; // Varsayılan ülke
+  int _currentPage = 1;
+  int _pageSize = 20;
+  int _totalResults = 0;
 
-  // Getter'lar:
+  // Getter'lar
   List<NewsArticle> get articles => _articles;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   SortType get currentSortType => _currentSortType;
   String get currentCountry => _currentCountry;
+  bool get hasMore => _articles.length < _totalResults;
 
-  // Haberleri API'den çekmek için; country bilgisi de gönderiliyor.
+  // Haberleri API'den çekmek için (ilk sayfa)
   Future<void> fetchNews({String? query, SortType? sortType}) async {
     _isLoading = true;
+    _currentPage = 1;
+    _articles = [];
     notifyListeners();
 
     try {
-      // Eğer query parametresi null ise, daha önce saklanan query'yi kullan.
+      // Query ve sortType güncelle
       _currentQuery = query ?? _currentQuery;
       if (sortType != null) {
         _currentSortType = sortType;
       }
 
-      _articles = await _newsApiService.fetchTopHeadlines(
+      final result = await _newsApiService.fetchTopHeadlines(
         query: _currentQuery,
         sortType: _currentSortType,
         country: _currentCountry,
+        page: _currentPage,
+        pageSize: _pageSize,
       );
+
+      _articles = result['articles'] as List<NewsArticle>;
+      _totalResults = result['totalResults'] as int;
     } catch (e) {
       log(e.toString(), name: "fetchNewsError");
       _articles = [];
+      _totalResults = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Arama çubuğundan gelen query'yi güncellemek ve haberleri yeniden çekmek için:
-  void updateQuery(String query) {
-    fetchNews(query: query, sortType: _currentSortType);
-  }
+  // Daha fazla haber çekmek için (sonraki sayfalar)
+  Future<void> fetchMoreNews() async {
+    if (_isLoadingMore || !hasMore) return;
 
-  // Sıralama tipini değiştirmek için:
-  void changeSortType(SortType sortType) {
-    if (sortType != _currentSortType) {
-      fetchNews(query: _currentQuery, sortType: sortType);
+    _isLoadingMore = true;
+    _currentPage++;
+    notifyListeners();
+
+    try {
+      final result = await _newsApiService.fetchTopHeadlines(
+        query: _currentQuery,
+        sortType: _currentSortType,
+        country: _currentCountry,
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
+
+      _articles.addAll(result['articles'] as List<NewsArticle>);
+      _totalResults = result['totalResults'] as int;
+    } catch (e) {
+      log(e.toString(), name: "fetchMoreNewsError");
+      _currentPage--; // Hata olursa sayfayı geri al
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
     }
   }
 
-  // Ülke bilgisini güncellemek için:
-  void updateCountry(String country) {
-    _currentCountry = country;
-    fetchNews(query: _currentQuery, sortType: _currentSortType);
+  // Arama çubuğundan gelen query'yi güncellemek
+  void updateQuery(String query) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery != _currentQuery) {
+      fetchNews(query: trimmedQuery.isEmpty ? null : trimmedQuery);
+    }
   }
 
-  // İlk yükleme için:
+  // Sıralama tipini değiştirmek
+  void changeSortType(SortType sortType) {
+    if (sortType != _currentSortType) {
+      fetchNews(sortType: sortType);
+    }
+  }
+
+  // Ülke bilgisini güncellemek
+  void updateCountry(String country) {
+    if (country != _currentCountry) {
+      _currentCountry = country;
+      fetchNews();
+    }
+  }
+
+  // İlk yükleme için
   void initialize() {
-    fetchNews(sortType: _currentSortType);
+    if (_articles.isEmpty && !_isLoading) {
+      fetchNews();
+    }
   }
 }

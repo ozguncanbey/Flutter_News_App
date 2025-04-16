@@ -18,11 +18,12 @@ final class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   SortType _selectedSort = SortType.publishedAt;
   bool _isInitialized = false;
 
   @override
-  bool get wantKeepAlive => true; // Sayfanın durumunun korunması için
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -34,7 +35,19 @@ final class _HomePageState extends State<HomePage>
       setState(() {});
     });
 
-    // Sadece ilk kez yükleme yapmak için
+    // ScrollController dinleyicisi: Liste sonuna gelindiğinde daha fazla haber yükle
+    _scrollController.addListener(() {
+      if (_scrollController.position.extentAfter < 200 &&
+          Provider.of<NewsListViewModel>(context, listen: false).hasMore &&
+          !Provider.of<NewsListViewModel>(
+            context,
+            listen: false,
+          ).isLoadingMore) {
+        Provider.of<NewsListViewModel>(context, listen: false).fetchMoreNews();
+      }
+    });
+
+    // İlk yükleme
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isInitialized) {
         final viewModel = Provider.of<NewsListViewModel>(
@@ -53,13 +66,13 @@ final class _HomePageState extends State<HomePage>
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _clearSearch(NewsListViewModel viewModel) {
     _searchController.clear();
-    // Boş query gönderiyoruz, böylece _currentQuery sıfırlanır.
-    viewModel.fetchNews(query: "", sortType: _selectedSort);
+    viewModel.updateQuery('');
     FocusScope.of(context).unfocus();
   }
 
@@ -67,7 +80,6 @@ final class _HomePageState extends State<HomePage>
     await viewModel.fetchNews(sortType: _selectedSort);
   }
 
-  // Dropdown için sort-by menüsünü açan metod
   void _showSortMenu(BuildContext context) async {
     final RenderBox button = context.findRenderObject()! as RenderBox;
     final RenderBox overlay =
@@ -100,15 +112,15 @@ final class _HomePageState extends State<HomePage>
     if (selected != null && selected != _selectedSort) {
       setState(() {
         _selectedSort = selected;
-        Provider.of<NewsListViewModel>(
+        final viewModel = Provider.of<NewsListViewModel>(
           context,
           listen: false,
-        ).changeSortType(selected);
+        );
+        viewModel.changeSortType(selected);
       });
     }
   }
 
-  // Dropdown için country menüsünü açan metod (Country enum kullanılıyor)
   void _showCountryMenu(BuildContext context) async {
     final RenderBox button = context.findRenderObject()! as RenderBox;
     final RenderBox overlay =
@@ -138,17 +150,14 @@ final class _HomePageState extends State<HomePage>
     );
 
     if (selected != null) {
-      Provider.of<NewsListViewModel>(
-        // ignore: use_build_context_synchronously
-        context,
-        listen: false,
-      ).updateCountry(selected.code);
+      final viewModel = Provider.of<NewsListViewModel>(context, listen: false);
+      viewModel.updateCountry(selected.code);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin için gerekli
+    super.build(context);
     final newsViewModel = Provider.of<NewsListViewModel>(context);
     final theme = Theme.of(context);
 
@@ -158,7 +167,6 @@ final class _HomePageState extends State<HomePage>
         foregroundColor: Colors.white,
         backgroundColor: theme.primaryColor,
         actions: [
-          // Tek buton: textField boşsa country, doluysa sort-dropdown açsın.
           IconButton(
             icon: Icon(
               _searchController.text.isEmpty ? Icons.flag : Icons.sort,
@@ -203,10 +211,7 @@ final class _HomePageState extends State<HomePage>
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (value) {
-                      newsViewModel.fetchNews(
-                        query: value,
-                        sortType: _selectedSort,
-                      );
+                      newsViewModel.updateQuery(value);
                     },
                   ),
                 ),
@@ -238,11 +243,23 @@ final class _HomePageState extends State<HomePage>
                                 message: 'No news found',
                               )
                               : ListView.builder(
+                                controller: _scrollController,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16.0,
                                 ),
-                                itemCount: newsViewModel.articles.length,
+                                itemCount:
+                                    newsViewModel.articles.length +
+                                    (newsViewModel.hasMore ? 1 : 0),
                                 itemBuilder: (context, index) {
+                                  if (index == newsViewModel.articles.length &&
+                                      newsViewModel.hasMore) {
+                                    return const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
                                   final NewsArticle article =
                                       newsViewModel.articles[index];
                                   return Card(
