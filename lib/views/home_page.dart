@@ -35,6 +35,11 @@ final class _HomePageState extends State<HomePage>
       setState(() {});
     });
 
+    // Sayfa açıldığında TextField'ın otomatik focus almasını engelleyin
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.unfocus();
+    });
+
     // ScrollController dinleyicisi: Liste sonuna gelindiğinde daha fazla haber yükle
     _scrollController.addListener(() {
       if (_scrollController.position.extentAfter < 200 &&
@@ -196,6 +201,7 @@ final class _HomePageState extends State<HomePage>
               children: [
                 Expanded(
                   child: TextField(
+                    autofocus: false, // Otomatik focus kapalı
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     cursorColor: theme.primaryColor,
