@@ -44,12 +44,11 @@ final class _DetailPageState extends State<DetailPage> {
     });
   }
 
-  Future<void> _launchUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      throw 'Could not launch $url';
+  Future<void> _launchUrl(String urlString) async {
+    final uri = Uri.parse(urlString);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched) {
+      throw 'Could not launch $urlString';
     }
   }
 
