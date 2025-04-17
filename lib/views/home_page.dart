@@ -169,6 +169,7 @@ final class _HomePageState extends State<HomePage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flutter News App'),
+        centerTitle: true,  // ← Başlığı ortala
         foregroundColor: Colors.white,
         backgroundColor: theme.primaryColor,
         actions: [

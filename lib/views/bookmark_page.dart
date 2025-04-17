@@ -58,6 +58,7 @@ final class _BookmarkPageState extends State<BookmarkPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bookmark'),
+        centerTitle: true,  // ← Tüm AppBar’lar ortalı olsun
         foregroundColor: Colors.white,
         backgroundColor: theme.primaryColor,
         elevation: 0,
